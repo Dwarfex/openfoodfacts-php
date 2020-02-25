@@ -69,7 +69,7 @@ class Api
      * this constant defines the environments usable by the API
      * @var array
      */
-    private const LIST_API = [
+    public const LIST_API = [
         'food'    => 'https://%s.openfoodfacts.org',
         'beauty'  => 'https://%s.openbeautyfacts.org',
         'pet'     => 'https://%s.openpetfoodfacts.org',
@@ -112,7 +112,7 @@ class Api
     private const FILE_TYPE_MAP = [
         "mongodb"   => "openfoodfacts-mongodbdump.tar.gz",
         "csv"       => "en.openfoodfacts.org.products.csv",
-        "rdf"       => "en.openfoodfacts.org.products.rdf"
+        "rdf"       => "en.openfoodfacts.org.products.rdf",
     ];
 
     /**
@@ -160,7 +160,7 @@ class Api
     {
         $this->auth = [
             'user_id'   => $username,
-            'password'  => $password
+            'password'  => $password,
         ];
     }
 
@@ -305,7 +305,7 @@ class Api
         $postData = [
             'code'                      => $code,
             'imagefield'                => $imageField,
-            'imgupload_' . $imageField  => fopen($imagePath, 'r')
+            'imgupload_' . $imageField  => fopen($imagePath, 'r'),
         ];
         return $this->fetchPost($url, $postData, true);
     }
@@ -333,6 +333,53 @@ class Api
         $url = $this->buildUrl('cgi', 'search.pl', $parameters);
         $result = $this->fetch($url, false);
         return new Collection($result, $this->currentAPI);
+    }
+
+
+    /**
+     * Please consider this may result in a huge resultset and a lot of traffic.
+     * Do not use this function for scraping. Please consider using the database dump @see Api::downloadData()
+     *
+     * @param string $search
+     * @param int    $page
+     * @param int    $pageSize
+     * @param string $sortBy
+     * @return Collection
+     * @throws BadRequestException
+     * @throws InvalidArgumentException
+     */
+    public function searchAndGetAllPages(string $search, int $page = 1, int $pageSize = 250, string $sortBy = 'unique_scans'): Collection
+    {
+        $result         = [];
+        $gotAllPages    = false;
+        $pageIndex      = 1;
+        $pagesAvailable = null;
+        do {
+            $collection = $this->search($search, $pageIndex, $pageSize, $sortBy);
+            if ($pagesAvailable === null) {
+                $pagesAvailable = (int)ceil($collection->searchCount() / $pageSize);
+            } elseif ($pageIndex === $pagesAvailable) {
+                $gotAllPages = true;
+            }
+
+            /** @var Document $document */
+            foreach ($collection as $document) {
+                $result[] = $document;
+            }
+
+            $pageIndex++;
+
+        } while ($gotAllPages === false);
+
+        $collectionData['products'] = $result;
+
+        if (empty($result)) {
+
+            return new Collection(null, $this->currentAPI);
+        }
+
+        return new Collection($collectionData, $this->currentAPI);
+
     }
 
     /**
@@ -396,7 +443,7 @@ class Api
                 // this function help to find redirection
                 // On redirect we lost some parameters like page
                 $realUrl= (string)$stats->getEffectiveUri();
-            }
+            },
         ];
         if ($this->auth) {
             $data['auth'] = array_values($this->auth);
@@ -445,7 +492,7 @@ class Api
             foreach ($postData as $key => $value) {
                 $data['multipart'][] = [
                     'name'      => $key,
-                    'contents'  => $value
+                    'contents'  => $value,
                 ];
             }
         } else {
@@ -494,21 +541,21 @@ class Api
                   $service,
                   'v0',
                   $resourceType,
-                  $parameters
+                  $parameters,
                 ]);
                 break;
             case 'data':
                 $baseUrl = implode('/', [
                   $this->geoUrl,
                   $service,
-                  $resourceType
+                  $resourceType,
                 ]);
                 break;
             case 'cgi':
                 $baseUrl = implode('/', [
                   $this->geoUrl,
                   $service,
-                  $resourceType
+                  $resourceType,
                 ]);
                 $baseUrl .= '?' . http_build_query($parameters);
                 break;
@@ -525,7 +572,7 @@ class Api
                 $baseUrl = implode('/', array_filter([
                     $this->geoUrl,
                     $resourceType,
-                    $parameters
+                    $parameters,
                 ], function ($value) {
                     return !empty($value);
                 }));

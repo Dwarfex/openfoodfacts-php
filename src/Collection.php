@@ -46,10 +46,10 @@ class Collection implements Iterator
             }
         }
 
-        $this->count    = $data['count'];
-        $this->page     = $data['page'];
-        $this->skip     = $data['skip'];
-        $this->pageSize = $data['page_size'];
+        $this->count    = $data['count'] ?? count($data['products']);
+        $this->page     = $data['page'] ?? null;
+        $this->skip     = $data['skip'] ?? null;
+        $this->pageSize = $data['page_size'] ?? count($data['products']);
     }
 
     /**
