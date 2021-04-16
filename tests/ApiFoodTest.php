@@ -66,24 +66,25 @@ class ApiFoodTest extends TestCase
 
     public function testApiCollection(): void
     {
+        $page = 3;
         $collection = $this->api->getByFacets([]);
         $this->assertInstanceOf(Collection::class, $collection);
         $this->assertEquals(0, $collection->pageCount());
 
         try {
-            $collection = $this->api->getByFacets(['trace' => 'egg', 'country' => 'france'], 3);
+            $collection = $this->api->getByFacets(['trace' => 'egg', 'country' => 'france'], $page);
             $this->assertInstanceOf(Collection::class, $collection);
             $this->assertTrue(false);
         } catch (Notice $e) {
             $this->assertEquals('OpenFoodFact - Your request has been redirect', $e->getMessage());
         }
 
-        $collection = $this->api->getByFacets(['trace' => 'eggs', 'country' => 'france'], 3);
+        $collection = $this->api->getByFacets(['trace' => 'eggs', 'country' => 'france'], $page);
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals(20, $collection->pageCount());
-        $this->assertEquals(3, $collection->getPage());
-        $this->assertEquals(40, $collection->getSkip());
-        $this->assertEquals(20, $collection->getPageSize());
+
+        $this->assertGreaterThan(20, $collection->pageCount());
+        $this->assertEquals($page, $collection->getPage());
+        $this->assertEquals(($page -1 ) *$collection->getPageSize(), $collection->getSkip());
         $this->assertGreaterThan(1000, $collection->searchCount());
 
         foreach ($collection as $key => $doc) {
@@ -180,8 +181,8 @@ class ApiFoodTest extends TestCase
     {
         $collection = $this->api->getIngredients();
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals(20, $collection->pageCount());
-        $this->assertEquals(20, $collection->getPageSize());
+        $this->assertIsInt($collection->pageCount());
+        $this->assertIsInt($collection->getPageSize());
         $this->assertGreaterThan(70000, $collection->searchCount());
 
         try {
