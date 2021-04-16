@@ -8,7 +8,6 @@ use OpenFoodFacts\Collection;
 use OpenFoodFacts\Document\PetDocument;
 use OpenFoodFacts\Document;
 use OpenFoodFacts\Exception\{
-    ProductNotFoundException,
     BadRequestException
 };
 
@@ -53,7 +52,7 @@ class ApiPetTest extends TestCase
             $this->api->uploadImage('7613035799738', 'fronts', 'nothing');
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'not Available yet');
+            $this->assertEquals('not Available yet', $e->getMessage());
             $this->markTestSkipped(
                 $e->getMessage()
             );
@@ -67,7 +66,7 @@ class ApiPetTest extends TestCase
         $collection = $this->api->search('chat', 3, 30);
 
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 30);
+        $this->assertEquals(30, $collection->pageCount());
         $this->assertGreaterThan(100, $collection->searchCount());
 
     }

@@ -233,13 +233,14 @@ class Api
 
     /**
      * This function return a Collection of Document search by facets
+     * (it uses default page size)
      * @param array $query list of facets with value
      * @param integer $page Number of the page
      * @return Collection     The list of all documents found
      * @throws InvalidArgumentException
      * @throws BadRequestException
      */
-    public function getByFacets(array $query = [], int $page = 1) : Collection
+    public function getByFacets(array $query = [], int $page = 1)  : Collection
     {
         if (empty($query)) {
             return new Collection();
@@ -250,7 +251,6 @@ class Api
             $search[] = $key;
             $search[] = $value;
         }
-
         $url = $this->buildUrl(null, $search, $page);
         $result = $this->fetch($url);
         return new Collection($result, $this->currentAPI);

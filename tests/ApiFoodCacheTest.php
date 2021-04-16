@@ -1,7 +1,7 @@
 <?php
 
-use GuzzleHttp\Exception\ServerException;
 use OpenFoodFacts\FilesystemTrait;
+use PHPUnit\Framework\Error\Notice;
 use PHPUnit\Framework\TestCase;
 
 use OpenFoodFacts\Api;
@@ -18,7 +18,6 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Psr16Cache;
-use Symfony\Component\Console\Logger\ConsoleLogger;
 
 class ApiFoodCacheTest extends TestCase
 {
@@ -70,21 +69,18 @@ class ApiFoodCacheTest extends TestCase
         $this->assertNotEmpty($prd->product_name);
 
         try {
-            $product = $this->api->getProduct('305764038514800');
+            $this->api->getProduct('305764038514800');
             $this->assertTrue(false);
         } catch (ProductNotFoundException $e) {
             $this->assertTrue(true);
         }
 
         try {
-            $result = $this->api->downloadData('tests/mongodb', 'nopeFile');
+            $this->api->downloadData('tests/mongodb', 'nopeFile');
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'File type not recognized!');
+            $this->assertEquals('File type not recognized!', $e->getMessage());
         }
-
-        // $result = $this->api->downloadData('tests/tmp/mongodb');
-        // $this->assertTrue(true);
     }
 
     public function testApiCollection(): void
@@ -92,21 +88,22 @@ class ApiFoodCacheTest extends TestCase
 
         $collection = $this->api->getByFacets([]);
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 0);
+        $this->assertEquals(0, $collection->pageCount());
 
         try {
             $collection = $this->api->getByFacets(['trace' => 'egg', 'country' => 'france'], 3);
+            $this->assertInstanceOf(Collection::class, $collection);
             $this->assertTrue(false);
-        } catch (\PHPUnit\Framework\Error\Notice $e) {
-            $this->assertEquals($e->getMessage(), 'OpenFoodFact - Your request has been redirect');
+        } catch (Notice $e) {
+            $this->assertEquals('OpenFoodFact - Your request has been redirect', $e->getMessage());
         }
 
         $collection = $this->api->getByFacets(['trace' => 'eggs', 'country' => 'france'], 3);
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 20);
-        $this->assertEquals($collection->getPage(), 3);
-        $this->assertEquals($collection->getSkip(), 40);
-        $this->assertEquals($collection->getPageSize(), 20);
+        $this->assertEquals(20, $collection->pageCount());
+        $this->assertEquals(3, $collection->getPage());
+        $this->assertEquals(40, $collection->getSkip());
+        $this->assertEquals(20, $collection->getPageSize());
         $this->assertGreaterThan(1000, $collection->searchCount());
 
         foreach ($collection as $key => $doc) {
@@ -126,7 +123,7 @@ class ApiFoodCacheTest extends TestCase
 
         $collection = $this->api->search('volvic', 3, 30);
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 30);
+        $this->assertEquals(30, $collection->pageCount());
         $this->assertGreaterThan(100, $collection->searchCount());
 
     }
@@ -137,8 +134,8 @@ class ApiFoodCacheTest extends TestCase
 
         $collection = $this->api->getIngredients();
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 20);
-        $this->assertEquals($collection->getPageSize(), 20);
+        $this->assertEquals(20, $collection->pageCount());
+        $this->assertEquals(20, $collection->getPageSize());
         $this->assertGreaterThan(70000, $collection->searchCount());
 
         try {
@@ -146,7 +143,7 @@ class ApiFoodCacheTest extends TestCase
             $this->assertInstanceOf(Collection::class, $collection);
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'Facet "ingredient" not found');
+            $this->assertEquals('Facet "ingredient" not found', $e->getMessage());
         }
 
         $collection = $this->api->getPurchase_places();
@@ -158,14 +155,15 @@ class ApiFoodCacheTest extends TestCase
 
         try {
             $collection = $this->api->getIngredient();
+            $this->assertInstanceOf(Collection::class, $collection);
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'Facet "ingredient" not found');
+            $this->assertEquals('Facet "ingredient" not found', $e->getMessage());
         }
 
         try {
-            $collection = $this->api->nope();
-        } catch (\Exception $e) {
+            $this->api->nope();
+        } catch (Exception $e) {
             $this->assertTrue(true);
         }
     }

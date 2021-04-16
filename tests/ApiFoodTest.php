@@ -2,6 +2,7 @@
 
 use GuzzleHttp\Exception\ServerException;
 use OpenFoodFacts\FilesystemTrait;
+use PHPUnit\Framework\Error\Notice;
 use PHPUnit\Framework\TestCase;
 
 use OpenFoodFacts\Api;
@@ -36,7 +37,6 @@ class ApiFoodTest extends TestCase
 
     public function testApi(): void
     {
-
         $prd = $this->api->getProduct('3057640385148');
 
         $this->assertInstanceOf(FoodDocument::class, $prd);
@@ -46,6 +46,7 @@ class ApiFoodTest extends TestCase
 
         try {
             $product = $this->api->getProduct('305764038514800');
+            $this->assertInstanceOf(Document::class, $product);
             $this->assertTrue(false);
         } catch (ProductNotFoundException $e) {
             $this->assertTrue(true);
@@ -53,9 +54,10 @@ class ApiFoodTest extends TestCase
 
         try {
             $result = $this->api->downloadData('tests/mongodb', 'nopeFile');
+            $this->assertIsBool($result);
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'File type not recognized!');
+            $this->assertEquals('File type not recognized!', $e->getMessage());
         }
 
         // $result = $this->api->downloadData('tests/tmp/mongodb');
@@ -64,24 +66,24 @@ class ApiFoodTest extends TestCase
 
     public function testApiCollection(): void
     {
-
         $collection = $this->api->getByFacets([]);
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 0);
+        $this->assertEquals(0, $collection->pageCount());
 
         try {
             $collection = $this->api->getByFacets(['trace' => 'egg', 'country' => 'france'], 3);
+            $this->assertInstanceOf(Collection::class, $collection);
             $this->assertTrue(false);
-        } catch (\PHPUnit\Framework\Error\Notice $e) {
-            $this->assertEquals($e->getMessage(), 'OpenFoodFact - Your request has been redirect');
+        } catch (Notice $e) {
+            $this->assertEquals('OpenFoodFact - Your request has been redirect', $e->getMessage());
         }
 
         $collection = $this->api->getByFacets(['trace' => 'eggs', 'country' => 'france'], 3);
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 20);
-        $this->assertEquals($collection->getPage(), 3);
-        $this->assertEquals($collection->getSkip(), 40);
-        $this->assertEquals($collection->getPageSize(), 20);
+        $this->assertEquals(20, $collection->pageCount());
+        $this->assertEquals(3, $collection->getPage());
+        $this->assertEquals(40, $collection->getSkip());
+        $this->assertEquals(20, $collection->getPageSize());
         $this->assertGreaterThan(1000, $collection->searchCount());
 
         foreach ($collection as $key => $doc) {
@@ -90,18 +92,18 @@ class ApiFoodTest extends TestCase
             }
             $this->assertInstanceOf(FoodDocument::class, $doc);
             $this->assertInstanceOf(Document::class, $doc);
-
         }
-
     }
 
     public function testApiAddProduct(): void
     {
         $this->api->activeTestMode();
+        $postData = [];
         try {
             $prd = $this->api->getProduct('3057640385148');
             $this->assertInstanceOf(FoodDocument::class, $prd);
             $this->assertInstanceOf(Document::class, $prd);
+            $postData = ['code' => $prd->code, 'product_name' => $prd->product_name];
         } catch (Exception $exception) {
             if ($exception->getPrevious() instanceof ServerException && $exception->getPrevious()->getCode() === 503) {
                 $this->markTestSkipped(
@@ -110,7 +112,6 @@ class ApiFoodTest extends TestCase
             }
         }
 
-        $postData = ['code' => $prd->code, 'product_name' => $prd->product_name];
 
         $result = $this->api->addNewProduct($postData);
         $this->assertTrue(is_bool($result));
@@ -120,6 +121,7 @@ class ApiFoodTest extends TestCase
 
         try {
             $result = $this->api->addNewProduct($postData);
+            $this->assertNotNull($result);
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
             $this->assertTrue(true);
@@ -127,13 +129,11 @@ class ApiFoodTest extends TestCase
         $postData = ['code' => '', 'product_name' => $prd->product_name];
         $result   = $this->api->addNewProduct($postData);
         $this->assertTrue(is_string($result));
-        $this->assertEquals($result, 'no code or invalid code');
-
+        $this->assertEquals('no code or invalid code', $result);
     }
 
     public function testApiAddImage(): void
     {
-
         $this->api->activeTestMode();
         try {
             $prd = $this->api->getProduct('3057640385148');
@@ -150,43 +150,38 @@ class ApiFoodTest extends TestCase
             $this->api->uploadImage('3057640385148', 'fronts', 'nothing');
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'ImageField not valid!');
+            $this->assertEquals('ImageField not valid!', $e->getMessage());
         }
         try {
             $this->api->uploadImage('3057640385148', 'front', 'nothing');
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'Image not found');
+            $this->assertEquals('Image not found', $e->getMessage());
         }
         $file1 = $this->createRandomImage();
 
         $result = $this->api->uploadImage('3057640385148', 'front', $file1);
-        $this->assertEquals($result['status'], 'status ok');
+        $this->assertEquals('status ok', $result['status']);
         $this->assertTrue(isset($result['imagefield']));
         $this->assertTrue(isset($result['image']));
         $this->assertTrue(isset($result['image']['imgid']));
-
-
     }
 
     public function testApiSearch(): void
     {
-
         $collection = $this->api->search('volvic', 3, 30);
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 30);
+        $this->assertEquals(30, $collection->pageCount());
         $this->assertGreaterThan(100, $collection->searchCount());
-
     }
 
 
     public function testFacets(): void
     {
-
         $collection = $this->api->getIngredients();
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertEquals($collection->pageCount(), 20);
-        $this->assertEquals($collection->getPageSize(), 20);
+        $this->assertEquals(20, $collection->pageCount());
+        $this->assertEquals(20, $collection->getPageSize());
         $this->assertGreaterThan(70000, $collection->searchCount());
 
         try {
@@ -194,7 +189,7 @@ class ApiFoodTest extends TestCase
             $this->assertInstanceOf(Collection::class, $collection);
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'Facet "ingredient" not found');
+            $this->assertEquals('Facet "ingredient" not found', $e->getMessage());
         }
 
         $collection = $this->api->getPurchase_places();
@@ -206,14 +201,15 @@ class ApiFoodTest extends TestCase
 
         try {
             $collection = $this->api->getIngredient();
+            $this->assertInstanceOf(Collection::class, $collection);
             $this->assertTrue(false);
         } catch (BadRequestException $e) {
-            $this->assertEquals($e->getMessage(), 'Facet "ingredient" not found');
+            $this->assertEquals('Facet "ingredient" not found', $e->getMessage());
         }
 
         try {
-            $collection = $this->api->nope();
-        } catch (\Exception $e) {
+            $this->api->nope();
+        } catch (Exception $e) {
             $this->assertTrue(true);
         }
     }
@@ -221,7 +217,6 @@ class ApiFoodTest extends TestCase
 
     private function createRandomImage(): string
     {
-
         $width  = 400;
         $height = 200;
 
@@ -236,8 +231,7 @@ class ApiFoodTest extends TestCase
         if (imagejpeg($imageRes, $path)) {
             return $path;
         }
-        throw new \Exception("Error Processing Request", 1);
-
+        throw new Exception("Error Processing Request", 1);
     }
 
     protected function tearDown()
