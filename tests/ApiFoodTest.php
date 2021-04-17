@@ -176,6 +176,40 @@ class ApiFoodTest extends TestCase
         $this->assertGreaterThan(100, $collection->searchCount());
     }
 
+    public function testAvailableFacets(): void
+    {
+        $testcases =
+            [
+                'additives' =>'en:e160c',
+                'allergens' => 'en:eggs',
+                'brands' =>'Fleury Michon',
+                'categories' =>'en:fishes',
+                'countries' => 'en:france', // France
+                'contributors' =>'hungergames',
+                'code' => '8017596101280',
+                'entry_dates' => '2018',
+                'ingredients' => 'en:water',
+                'label' =>'Organic',
+                'languages' => 'en:italian',
+                'nutrition_grade' =>'b',
+                'packaging' =>'en:plastic',
+                'packaging_codes',
+                'purchase_places' =>'France',
+                'photographer' =>'openfoodfacts-contributors',
+                'informer' => 'openfoodfacts-contributors',
+                'states' =>'en:to-be-completed',
+                'stores' =>'Magasins U',
+                'traces' =>'en:eggs',
+            ];
+        foreach ($testcases as $facet => $value){
+            if(empty($value)){
+                continue;
+            }
+            $result = $this->api->getByFacets([$facet => $value]);
+            $e =1;
+        }
+    }
+
 
     public function testFacets(): void
     {

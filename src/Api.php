@@ -310,6 +310,19 @@ class Api
         return $this->fetchPost($url, $postData, true);
     }
 
+
+    public function searchByParameters(string $searchString = '', array $searchParameters = [], array $parameters = []){
+        $page = $parameters['page'];
+
+        $search
+        $combinedParameters = [
+            'search_terms'  => $search,
+            'page'          => $parameters['page'] ?? 1,
+            'page_size'     => $parameters['page_size'] ?? 20,
+            'sort_by'       => $parameters['sort_by'] ?? 'unique_scans',
+            'json'          => '1',
+        ];
+    }
     /**
      * A search function
      * @param string $search a search term (fulltext)
